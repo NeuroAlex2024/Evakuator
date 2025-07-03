@@ -19,11 +19,22 @@
                 <div class="logo">
                     <h2>🚛 ЭвакуаторПро</h2>
                 </div>
+                <nav class="nav-menu" id="navMenu">
+                    <a href="#services" class="nav-link">Услуги</a>
+                    <a href="#advantages" class="nav-link">Преимущества</a>
+                    <a href="#calculator" class="nav-link">Калькулятор</a>
+                    <a href="#reviews" class="nav-link">Отзывы</a>
+                </nav>
                 <div class="header-contact">
                     <a href="tel:+79772957171" class="phone-btn">
                         <i class="fas fa-phone"></i>
                         +7 (977) 295-71-71
                     </a>
+                    <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -107,28 +118,74 @@
     </section>
 
     <!-- Calculator -->
-    <section class="calculator">
+    <section class="calculator" id="calculator">
         <div class="container">
             <h2>Рассчитайте стоимость эвакуации</h2>
             <div class="calculator-form">
                 <div class="form-group">
                     <label>Тип транспорта</label>
-                    <select id="vehicleType">
-                        <option value="2000">Легковой автомобиль - 2000₽</option>
-                        <option value="2500">Кроссовер/SUV - 2500₽</option>
-                        <option value="3000">Микроавтобус - 3000₽</option>
-                        <option value="2000">Мотоцикл - 2000₽</option>
-                    </select>
+                    <div class="vehicle-types">
+                        <button type="button" class="vehicle-btn active" data-price="2000" data-type="car">
+                            <i class="fas fa-car"></i>
+                            <span>Легковой</span>
+                            <small>от 2000₽</small>
+                        </button>
+                        <button type="button" class="vehicle-btn" data-price="2000" data-type="motorcycle">
+                            <i class="fas fa-motorcycle"></i>
+                            <span>Мотоцикл</span>
+                            <small>от 2000₽</small>
+                        </button>
+                        <button type="button" class="vehicle-btn" data-price="2500" data-type="suv">
+                            <i class="fas fa-truck-pickup"></i>
+                            <span>Внедорожник</span>
+                            <small>от 2500₽</small>
+                        </button>
+                        <button type="button" class="vehicle-btn" data-price="3000" data-type="van">
+                            <i class="fas fa-truck"></i>
+                            <span>Микроавтобус</span>
+                            <small>от 3000₽</small>
+                        </button>
+                    </div>
                 </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Заблокировано колёс</label>
+                        <div class="button-group">
+                            <button type="button" class="option-btn active" data-wheels="0">0</button>
+                            <button type="button" class="option-btn" data-wheels="1">1</button>
+                            <button type="button" class="option-btn" data-wheels="2">2</button>
+                            <button type="button" class="option-btn" data-wheels="3">3</button>
+                            <button type="button" class="option-btn" data-wheels="4">4</button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Руль заблокирован?</label>
+                        <div class="button-group">
+                            <button type="button" class="option-btn active" data-steering="no">Нет</button>
+                            <button type="button" class="option-btn" data-steering="yes">Да</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
-                    <label>Расстояние</label>
-                    <input type="range" id="distance" min="1" max="100" value="10" oninput="calculatePrice()">
-                    <span id="distanceValue">10 км</span>
+                    <label>
+                        <input type="checkbox" id="expressService" onchange="calculateAdvancedPrice()">
+                        Экспресс-подача (до 15 минут) +500₽
+                    </label>
                 </div>
+
+                <div class="form-group">
+                    <label>Расстояние: <span id="distanceValue">10 км</span></label>
+                    <input type="range" id="distance" min="1" max="100" value="10" oninput="calculateAdvancedPrice()">
+                </div>
+
                 <div class="price-result">
                     <div class="price-breakdown">
                         <div>Подача: <span id="basePrice">2000₽</span></div>
                         <div>Километры: <span id="kmPrice">500₽</span></div>
+                        <div class="complexity" id="complexityPrice" style="display: none;">Сложность: <span>+500₽</span></div>
+                        <div class="express-price" id="expressPrice" style="display: none;">Экспресс: <span>+500₽</span></div>
                         <div class="total">Итого: <span id="totalPrice">2500₽</span></div>
                     </div>
                     <button class="btn btn-primary" onclick="openCallbackModal()">
@@ -433,6 +490,8 @@
             </div>
         </div>
     </div>
+
+
 
     <!-- Sticky Call Button -->
     <div class="sticky-call-btn">

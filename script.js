@@ -8,6 +8,49 @@ const kmPrice = document.getElementById('kmPrice');
 const totalPrice = document.getElementById('totalPrice');
 const callbackForm = document.getElementById('callbackForm');
 
+// Mobile menu toggle
+function toggleMobileMenu() {
+    const navMenu = document.getElementById('navMenu');
+    const toggleBtn = document.querySelector('.mobile-menu-toggle');
+    
+    navMenu.classList.toggle('mobile-active');
+    toggleBtn.classList.toggle('active');
+    
+    // Prevent body scrolling when menu is open
+    if (navMenu.classList.contains('mobile-active')) {
+        document.body.style.overflow = 'hidden';
+    } else {
+        document.body.style.overflow = 'auto';
+    }
+}
+
+// Close mobile menu when clicking on link
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', () => {
+            const navMenu = document.getElementById('navMenu');
+            const toggleBtn = document.querySelector('.mobile-menu-toggle');
+            
+            navMenu.classList.remove('mobile-active');
+            toggleBtn.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        });
+    });
+
+    // Close mobile menu when clicking outside
+    document.addEventListener('click', function(event) {
+        const navMenu = document.getElementById('navMenu');
+        const toggleBtn = document.querySelector('.mobile-menu-toggle');
+        const header = document.querySelector('.sticky-header');
+        
+        if (!header.contains(event.target) && navMenu.classList.contains('mobile-active')) {
+            navMenu.classList.remove('mobile-active');
+            toggleBtn.classList.remove('active');
+            document.body.style.overflow = 'auto';
+        }
+    });
+});
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     initializeCalculator();
@@ -32,12 +75,111 @@ function calculatePrice() {
     distanceSlider.style.background = `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${percentage}%, #e2e8f0 ${percentage}%, #e2e8f0 100%)`;
 }
 
+// Advanced calculator functionality
+function calculateAdvancedPrice() {
+    const distance = parseInt(document.getElementById('distance').value);
+    const activeVehicle = document.querySelector('.vehicle-btn.active');
+    const vehiclePrice = activeVehicle ? parseInt(activeVehicle.dataset.price) : 2000;
+    
+    // Get complexity factors
+    const blockedWheels = document.querySelector('.option-btn.active[data-wheels]');
+    const blockedSteering = document.querySelector('.option-btn.active[data-steering]');
+    
+    const wheels = blockedWheels ? parseInt(blockedWheels.dataset.wheels) : 0;
+    const steering = blockedSteering ? blockedSteering.dataset.steering === 'yes' : false;
+    
+    // Get additional services
+    const expressService = document.getElementById('expressService')?.checked || false;
+    
+    // Calculate complexity cost
+    let complexityCost = 0;
+    if (wheels > 2 || steering) {
+        complexityCost = 500;
+    } else if (wheels > 0) {
+        complexityCost = 300;
+    }
+    
+    // Calculate additional services cost
+    const expressCost = expressService ? 500 : 0;
+    
+    const kmCost = distance * 50;
+    const total = vehiclePrice + kmCost + complexityCost + expressCost;
+
+    // Update display
+    document.getElementById('distanceValue').textContent = `${distance} км`;
+    document.getElementById('basePrice').textContent = `${vehiclePrice}₽`;
+    document.getElementById('kmPrice').textContent = `${kmCost}₽`;
+    document.getElementById('totalPrice').textContent = `${total}₽`;
+    
+    // Show/hide complexity cost
+    const complexityElement = document.getElementById('complexityPrice');
+    if (complexityCost > 0) {
+        complexityElement.style.display = 'flex';
+        complexityElement.querySelector('span').textContent = `+${complexityCost}₽`;
+    } else {
+        complexityElement.style.display = 'none';
+    }
+    
+    // Show/hide express cost
+    const expressElement = document.getElementById('expressPrice');
+    if (expressCost > 0) {
+        expressElement.style.display = 'flex';
+    } else {
+        expressElement.style.display = 'none';
+    }
+
+    // Update slider background
+    const percentage = (distance / 100) * 100;
+    document.getElementById('distance').style.background = `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${percentage}%, #e2e8f0 ${percentage}%, #e2e8f0 100%)`;
+}
+
 function initializeCalculator() {
     if (distanceSlider && vehicleType) {
         distanceSlider.addEventListener('input', calculatePrice);
         vehicleType.addEventListener('change', calculatePrice);
         calculatePrice(); // Initial calculation
     }
+    
+    // Initialize advanced calculator
+    initializeAdvancedCalculator();
+}
+
+function initializeAdvancedCalculator() {
+    // Vehicle type buttons
+    document.querySelectorAll('.vehicle-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.vehicle-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            calculateAdvancedPrice();
+        });
+    });
+    
+    // Option buttons - handle grouped buttons separately
+    document.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            // Remove active from siblings only (buttons in the same group)
+            const siblings = btn.parentElement.querySelectorAll('.option-btn');
+            siblings.forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            calculateAdvancedPrice();
+        });
+    });
+    
+    // Distance slider
+    const distanceSlider = document.getElementById('distance');
+    if (distanceSlider) {
+        distanceSlider.addEventListener('input', calculateAdvancedPrice);
+    }
+    
+    // Checkboxes
+    const expressServiceCheckbox = document.getElementById('expressService');
+    
+    if (expressServiceCheckbox) {
+        expressServiceCheckbox.addEventListener('change', calculateAdvancedPrice);
+    }
+    
+    // Initial calculation
+    calculateAdvancedPrice();
 }
 
 
