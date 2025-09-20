@@ -1,455 +1,216 @@
-// DOM Elements
-const modal = document.getElementById('callbackModal');
-const distanceSlider = document.getElementById('distance');
-const distanceValue = document.getElementById('distanceValue');
-const vehicleType = document.getElementById('vehicleType');
-const basePrice = document.getElementById('basePrice');
-const kmPrice = document.getElementById('kmPrice');
-const totalPrice = document.getElementById('totalPrice');
-const callbackForm = document.getElementById('callbackForm');
+const CallbackService = {
+    async send(endpoint, payload) {
+        if (endpoint) {
+            const response = await fetch(endpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
 
-// Mobile menu toggle
-function toggleMobileMenu() {
-    const navMenu = document.getElementById('navMenu');
-    const toggleBtn = document.querySelector('.mobile-menu-toggle');
-    
-    navMenu.classList.toggle('mobile-active');
-    toggleBtn.classList.toggle('active');
-    
-    // Prevent body scrolling when menu is open
-    if (navMenu.classList.contains('mobile-active')) {
-        document.body.style.overflow = 'hidden';
-    } else {
-        document.body.style.overflow = 'auto';
-    }
-}
+            if (!response.ok) {
+                throw new Error('REQUEST_FAILED');
+            }
 
-// Close mobile menu when clicking on link
-document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.nav-link').forEach(link => {
-        link.addEventListener('click', () => {
-            const navMenu = document.getElementById('navMenu');
-            const toggleBtn = document.querySelector('.mobile-menu-toggle');
-            
-            navMenu.classList.remove('mobile-active');
-            toggleBtn.classList.remove('active');
-            document.body.style.overflow = 'auto';
-        });
-    });
-
-    // Close mobile menu when clicking outside
-    document.addEventListener('click', function(event) {
-        const navMenu = document.getElementById('navMenu');
-        const toggleBtn = document.querySelector('.mobile-menu-toggle');
-        const header = document.querySelector('.sticky-header');
-        
-        if (!header.contains(event.target) && navMenu.classList.contains('mobile-active')) {
-            navMenu.classList.remove('mobile-active');
-            toggleBtn.classList.remove('active');
-            document.body.style.overflow = 'auto';
+            try {
+                return await response.json();
+            } catch (error) {
+                return { success: true };
+            }
         }
-    });
-});
 
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    initializeCalculator();
-    initializePhoneMask();
-    initializeScrollAnimations();
-});
-
-// Calculator functionality
-function calculatePrice() {
-    const distance = parseInt(distanceSlider.value);
-    const vehiclePrice = parseInt(vehicleType.value);
-    const kmCost = distance * 50;
-    const total = vehiclePrice + kmCost;
-
-    distanceValue.textContent = `${distance} км`;
-    basePrice.textContent = `${vehiclePrice}₽`;
-    kmPrice.textContent = `${kmCost}₽`;
-    totalPrice.textContent = `${total}₽`;
-
-    // Update slider background
-    const percentage = (distance / 100) * 100;
-    distanceSlider.style.background = `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${percentage}%, #e2e8f0 ${percentage}%, #e2e8f0 100%)`;
-}
-
-// Advanced calculator functionality
-function calculateAdvancedPrice() {
-    const distance = parseInt(document.getElementById('distance').value);
-    const activeVehicle = document.querySelector('.vehicle-btn.active');
-    const vehiclePrice = activeVehicle ? parseInt(activeVehicle.dataset.price) : 2000;
-    
-    // Get complexity factors
-    const blockedWheels = document.querySelector('.option-btn.active[data-wheels]');
-    const blockedSteering = document.querySelector('.option-btn.active[data-steering]');
-    
-    const wheels = blockedWheels ? parseInt(blockedWheels.dataset.wheels) : 0;
-    const steering = blockedSteering ? blockedSteering.dataset.steering === 'yes' : false;
-    
-    // Get additional services
-    const expressService = document.getElementById('expressService')?.checked || false;
-    
-    // Calculate complexity cost
-    let complexityCost = 0;
-    if (wheels > 2 || steering) {
-        complexityCost = 500;
-    } else if (wheels > 0) {
-        complexityCost = 300;
+        await new Promise(resolve => setTimeout(resolve, 600));
+        return { success: true };
     }
-    
-    // Calculate additional services cost
-    const expressCost = expressService ? 500 : 0;
-    
-    const kmCost = distance * 50;
-    const total = vehiclePrice + kmCost + complexityCost + expressCost;
+};
 
-    // Update display
-    document.getElementById('distanceValue').textContent = `${distance} км`;
-    document.getElementById('basePrice').textContent = `${vehiclePrice}₽`;
-    document.getElementById('kmPrice').textContent = `${kmCost}₽`;
-    document.getElementById('totalPrice').textContent = `${total}₽`;
-    
-    // Show/hide complexity cost
-    const complexityElement = document.getElementById('complexityPrice');
-    if (complexityCost > 0) {
-        complexityElement.style.display = 'flex';
-        complexityElement.querySelector('span').textContent = `+${complexityCost}₽`;
-    } else {
-        complexityElement.style.display = 'none';
-    }
-    
-    // Show/hide express cost
-    const expressElement = document.getElementById('expressPrice');
-    if (expressCost > 0) {
-        expressElement.style.display = 'flex';
-    } else {
-        expressElement.style.display = 'none';
-    }
+const App = {
+    config: {
+        kmRate: 50,
+        expressCost: 500,
+        callbackSeconds: 30,
+        priceAnimationDuration: 320,
+        analyticsCounterId: 103201010,
+        apiEndpoint: ''
+    },
+    state: {
+        menuOpen: false,
+        modalOpen: false,
+        callbackInterval: null,
+        lastCalculation: null
+    },
+    elements: {},
 
-    // Update slider background
-    const percentage = (distance / 100) * 100;
-    document.getElementById('distance').style.background = `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${percentage}%, #e2e8f0 ${percentage}%, #e2e8f0 100%)`;
-}
+    init() {
+        this.cacheElements();
+        this.bindEvents();
+        this.updateCalculatorDisplay({ animate: false });
+        this.updateSliderBackground();
+        this.resetCallbackTimerUI();
+        this.initSmoothScroll();
+        this.initializeScrollAnimations();
+        this.handleScroll();
+        this.maskPhoneInput();
+        window.addEventListener('load', () => document.body.classList.add('loaded'));
+    },
 
-function initializeCalculator() {
-    if (distanceSlider && vehicleType) {
-        distanceSlider.addEventListener('input', calculatePrice);
-        vehicleType.addEventListener('change', calculatePrice);
-        calculatePrice(); // Initial calculation
-    }
-    
-    // Initialize advanced calculator
-    initializeAdvancedCalculator();
-}
+    cacheElements() {
+        this.elements.body = document.body;
+        this.elements.header = document.querySelector('.sticky-header');
+        this.elements.navMenu = document.getElementById('navMenu');
+        this.elements.mobileToggle = document.querySelector('.mobile-menu-toggle');
+        this.elements.navLinks = Array.from(document.querySelectorAll('.nav-link'));
+        this.elements.vehicleButtons = Array.from(document.querySelectorAll('.vehicle-btn'));
+        this.elements.optionButtons = Array.from(document.querySelectorAll('.option-btn'));
+        this.elements.distanceInput = document.getElementById('distance');
+        this.elements.distanceValue = document.getElementById('distanceValue');
+        this.elements.expressCheckbox = document.getElementById('expressService');
+        this.elements.basePrice = document.getElementById('basePrice');
+        this.elements.kmPrice = document.getElementById('kmPrice');
+        this.elements.totalPrice = document.getElementById('totalPrice');
+        this.elements.complexityRow = document.getElementById('complexityPrice');
+        this.elements.complexityValue = this.elements.complexityRow?.querySelector('span');
+        this.elements.expressRow = document.getElementById('expressPrice');
+        this.elements.expressValue = this.elements.expressRow?.querySelector('span');
+        this.elements.modal = document.getElementById('callbackModal');
+        this.elements.modalClose = this.elements.modal?.querySelector('.close');
+        this.elements.modalTriggers = Array.from(document.querySelectorAll('[data-modal="callback"]'));
+        this.elements.callbackForm = document.getElementById('callbackForm');
+        this.elements.callbackSubmit = this.elements.callbackForm?.querySelector('button[type="submit"]');
+        this.elements.callbackFeedback = document.getElementById('callbackFeedback');
+        this.elements.clientName = document.getElementById('clientName');
+        this.elements.clientPhone = document.getElementById('clientPhone');
+        this.elements.modalTitle = this.elements.modal?.querySelector('h3');
+        this.elements.modalDescription = this.elements.modal?.querySelector('p');
+        this.elements.timerIdle = document.querySelector('.callback-timer-idle');
+        this.elements.timerActive = document.querySelector('.callback-timer-active');
+        this.elements.timerFinished = document.querySelector('.callback-timer-finished');
+        this.elements.timerProgress = document.querySelector('.timer-slider-progress');
+        this.elements.callbackCountdown = document.getElementById('callbackCountdown');
+        this.elements.faqQuestions = Array.from(document.querySelectorAll('.faq-question'));
+        this.elements.analyticsTargets = Array.from(document.querySelectorAll('[data-ym-goal]'));
+    },
 
-function initializeAdvancedCalculator() {
-    // Vehicle type buttons
-    document.querySelectorAll('.vehicle-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.vehicle-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            calculateAdvancedPrice();
-        });
-    });
-    
-    // Option buttons - handle grouped buttons separately
-    document.querySelectorAll('.option-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            // Remove active from siblings only (buttons in the same group)
-            const siblings = btn.parentElement.querySelectorAll('.option-btn');
-            siblings.forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
-            calculateAdvancedPrice();
-        });
-    });
-    
-    // Distance slider
-    const distanceSlider = document.getElementById('distance');
-    if (distanceSlider) {
-        distanceSlider.addEventListener('input', calculateAdvancedPrice);
-    }
-    
-    // Checkboxes
-    const expressServiceCheckbox = document.getElementById('expressService');
-    
-    if (expressServiceCheckbox) {
-        expressServiceCheckbox.addEventListener('change', calculateAdvancedPrice);
-    }
-    
-    // Initial calculation
-    calculateAdvancedPrice();
-}
-
-
-
-// Modal functionality
-function openCallbackModal() {
-    if (modal) {
-        modal.style.display = 'block';
-        document.body.style.overflow = 'hidden';
-        startCallbackTimer();
-    }
-}
-
-function closeCallbackModal() {
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-        stopCallbackTimer();
-        
-        // Reset modal content to original
-        const modalTitle = modal.querySelector('h3');
-        const modalDescription = modal.querySelector('p');
-        
-        if (modalTitle) modalTitle.textContent = 'Заказать обратный звонок';
-        if (modalDescription) modalDescription.textContent = 'Оставьте номер телефона и мы перезвоним в течение 30 секунд';
-    }
-}
-
-// Close modal when clicking outside
-window.onclick = function(event) {
-    if (event.target === modal) {
-        closeCallbackModal();
-    }
-}
-
-// Callback timer
-let callbackTimer;
-let callbackActive = false;
-
-function startCallbackTimer() {
-    if (callbackActive) return;
-    
-    const idleTimer = document.querySelector('.callback-timer-idle');
-    const activeTimer = document.querySelector('.callback-timer-active');
-    const finishedTimer = document.querySelector('.callback-timer-finished');
-    const progressBar = document.querySelector('.timer-slider-progress');
-    
-    // Show progress bar animation
-    if (progressBar) {
-        progressBar.style.width = '100%';
-    }
-    
-    // Show active timer after form submission
-    setTimeout(() => {
-        if (idleTimer) idleTimer.style.display = 'none';
-        if (activeTimer) activeTimer.style.display = 'block';
-        if (finishedTimer) finishedTimer.style.display = 'none';
-    }, 500);
-}
-
-function activateCallbackTimer() {
-    callbackActive = true;
-    let seconds = 30;
-    const timerElement = document.getElementById('callbackCountdown');
-    const idleTimer = document.querySelector('.callback-timer-idle');
-    const activeTimer = document.querySelector('.callback-timer-active');
-    const finishedTimer = document.querySelector('.callback-timer-finished');
-    
-    // Hide idle, show active
-    if (idleTimer) idleTimer.style.display = 'none';
-    if (activeTimer) activeTimer.style.display = 'block';
-    if (finishedTimer) finishedTimer.style.display = 'none';
-    
-    if (timerElement) {
-        callbackTimer = setInterval(() => {
-            timerElement.textContent = seconds;
-            seconds--;
-            
-            if (seconds < 0) {
-                clearInterval(callbackTimer);
-                // Show finished message
-                if (activeTimer) activeTimer.style.display = 'none';
-                if (finishedTimer) finishedTimer.style.display = 'block';
-                callbackActive = false;
-            }
-        }, 1000);
-    }
-}
-
-function stopCallbackTimer() {
-    if (callbackTimer) {
-        clearInterval(callbackTimer);
-    }
-    // Reset to idle state
-    const idleTimer = document.querySelector('.callback-timer-idle');
-    const activeTimer = document.querySelector('.callback-timer-active');
-    const finishedTimer = document.querySelector('.callback-timer-finished');
-    const progressBar = document.querySelector('.timer-slider-progress');
-    
-    if (idleTimer) idleTimer.style.display = 'block';
-    if (activeTimer) activeTimer.style.display = 'none';
-    if (finishedTimer) finishedTimer.style.display = 'none';
-    if (progressBar) progressBar.style.width = '0%';
-    
-    callbackActive = false;
-}
-
-// Phone mask
-function initializePhoneMask() {
-    const phoneInput = document.getElementById('clientPhone');
-    if (phoneInput) {
-        phoneInput.addEventListener('input', function(e) {
-            let value = e.target.value.replace(/\D/g, '');
-            
-            if (value.length > 0) {
-                if (value[0] === '8') {
-                    value = '7' + value.slice(1);
-                }
-                if (value[0] === '7') {
-                    value = value.slice(1);
-                }
-            }
-            
-            let formattedValue = '+7';
-            if (value.length > 0) {
-                formattedValue += ' (' + value.substring(0, 3);
-            }
-            if (value.length >= 4) {
-                formattedValue += ') ' + value.substring(3, 6);
-            }
-            if (value.length >= 7) {
-                formattedValue += '-' + value.substring(6, 8);
-            }
-            if (value.length >= 9) {
-                formattedValue += '-' + value.substring(8, 10);
-            }
-            
-            e.target.value = formattedValue;
-        });
-    }
-}
-
-// Form submission
-if (callbackForm) {
-    callbackForm.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        const name = document.getElementById('clientName').value;
-        const phone = document.getElementById('clientPhone').value;
-        
-        if (name && phone) {
-            // Отправка данных в Telegram
-            sendToTelegram(name, phone);
-            
-            // Start callback timer animation
-            activateCallbackTimer();
-            
-            // Reset form but keep modal open
-            callbackForm.reset();
+    bindEvents() {
+        if (this.elements.mobileToggle) {
+            this.elements.mobileToggle.addEventListener('click', () => this.toggleMenu());
         }
-    });
-}
 
-// Функция отправки в Telegram
-async function sendToTelegram(name, phone) {
-    const BOT_TOKEN = '7855914150:AAF7tCCMaM0NLa_r_QLBJ1APTXquVZPb7ls';
-    const CHAT_ID = '352283464'; // Ваш Chat ID
-    
-    const message = `🚛 НОВАЯ ЗАЯВКА НА ЭВАКУАТОР
-
-👤 Имя: ${name}
-📱 Телефон: ${phone}
-🕐 Время: ${new Date().toLocaleString('ru-RU', {
-        timeZone: 'Europe/Moscow',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit'
-    })}
-
-⚡ Перезвоните клиенту срочно!`;
-    
-    try {
-        const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: CHAT_ID,
-                text: message
-            })
+        this.elements.navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                this.closeMenu();
+            });
         });
-        
-        if (response.ok) {
-            console.log('✅ Заявка успешно отправлена в Telegram');
-        } else {
-            console.error('❌ Ошибка отправки в Telegram:', response.status);
-        }
-    } catch (error) {
-        console.error('❌ Ошибка при отправке в Telegram:', error);
-    }
-}
 
-// FAQ functionality
-function toggleFaq(element) {
-    const faqItem = element.parentElement;
-    const answer = faqItem.querySelector('.faq-answer');
-    const isActive = element.classList.contains('active');
-    
-    // Close all other FAQ items
-    document.querySelectorAll('.faq-question').forEach(q => {
-        q.classList.remove('active');
-        q.parentElement.querySelector('.faq-answer').classList.remove('active');
-    });
-    
-    // Toggle current item
-    if (!isActive) {
-        element.classList.add('active');
-        answer.classList.add('active');
-    }
-}
+        document.addEventListener('click', event => this.handleDocumentClick(event));
+        window.addEventListener('keydown', event => this.handleKeydown(event));
+        window.addEventListener('scroll', () => this.handleScroll());
 
-// Countdown animation - removed as we now use static text
+        this.elements.vehicleButtons.forEach(button => {
+            button.addEventListener('click', () => this.handleVehicleSelect(button));
+        });
 
-// Smooth scrolling for anchor links
-document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-    anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-            target.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
+        this.elements.optionButtons.forEach(button => {
+            button.addEventListener('click', () => this.handleOptionSelect(button));
+        });
+
+        if (this.elements.distanceInput) {
+            this.elements.distanceInput.addEventListener('input', () => {
+                this.updateSliderBackground();
+                this.updateCalculatorDisplay();
             });
         }
-    });
-});
 
-// Scroll animations
-function initializeScrollAnimations() {
-    const observerOptions = {
-        threshold: 0.1,
-        rootMargin: '0px 0px -50px 0px'
-    };
+        if (this.elements.expressCheckbox) {
+            this.elements.expressCheckbox.addEventListener('change', () => this.updateCalculatorDisplay());
+        }
 
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
+        this.elements.modalTriggers.forEach(trigger => {
+            trigger.addEventListener('click', event => {
+                event.preventDefault();
+                this.callAnalytics(trigger.dataset.ymGoal);
+                this.openModal();
+            });
         });
-    }, observerOptions);
 
-    // Observe elements for animation
-    const animatedElements = document.querySelectorAll('.step, .advantage, .review, .fleet-item');
-    animatedElements.forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(30px)';
-        el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(el);
-    });
-}
+        if (this.elements.modalClose) {
+            this.elements.modalClose.addEventListener('click', () => this.closeModal());
+        }
 
-// Header scroll effect
-window.addEventListener('scroll', function() {
-    const header = document.querySelector('.sticky-header');
-    if (header) {
+        if (this.elements.modal) {
+            this.elements.modal.addEventListener('click', event => this.handleModalClick(event));
+        }
+
+        if (this.elements.callbackForm) {
+            this.elements.callbackForm.addEventListener('submit', event => this.handleCallbackSubmit(event));
+        }
+
+        this.elements.faqQuestions.forEach(question => {
+            question.setAttribute('tabindex', '0');
+            question.setAttribute('role', 'button');
+            question.addEventListener('click', event => this.toggleFaq(event.currentTarget));
+            question.addEventListener('keydown', event => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    this.toggleFaq(event.currentTarget);
+                }
+            });
+        });
+
+        this.elements.analyticsTargets
+            .filter(target => !target.dataset.modal && target !== this.elements.callbackSubmit)
+            .forEach(target => {
+                target.addEventListener('click', () => this.callAnalytics(target.dataset.ymGoal));
+            });
+    },
+
+    toggleMenu() {
+        if (!this.elements.navMenu || !this.elements.mobileToggle) {
+            return;
+        }
+
+        this.state.menuOpen = !this.state.menuOpen;
+        this.elements.navMenu.classList.toggle('mobile-active', this.state.menuOpen);
+        this.elements.mobileToggle.classList.toggle('active', this.state.menuOpen);
+        this.elements.mobileToggle.setAttribute('aria-expanded', String(this.state.menuOpen));
+        this.elements.body.style.overflow = this.state.menuOpen ? 'hidden' : '';
+    },
+
+    closeMenu() {
+        if (!this.state.menuOpen) {
+            return;
+        }
+        this.state.menuOpen = false;
+        this.elements.navMenu?.classList.remove('mobile-active');
+        this.elements.mobileToggle?.classList.remove('active');
+        this.elements.mobileToggle?.setAttribute('aria-expanded', 'false');
+        this.elements.body.style.overflow = '';
+    },
+
+    handleDocumentClick(event) {
+        if (this.state.menuOpen && this.elements.header && !this.elements.header.contains(event.target)) {
+            this.closeMenu();
+        }
+    },
+
+    handleKeydown(event) {
+        if (event.key === 'Escape') {
+            if (this.state.menuOpen) {
+                this.closeMenu();
+            }
+            if (this.state.modalOpen) {
+                this.closeModal();
+            }
+        }
+    },
+
+    handleScroll() {
+        const header = this.elements.header;
+        if (!header) {
+            return;
+        }
+
         if (window.scrollY > 100) {
             header.style.background = 'rgba(255, 255, 255, 0.98)';
             header.style.boxShadow = '0 2px 20px rgba(0, 0, 0, 0.1)';
@@ -457,172 +218,439 @@ window.addEventListener('scroll', function() {
             header.style.background = 'rgba(255, 255, 255, 0.95)';
             header.style.boxShadow = 'none';
         }
-    }
-});
+    },
 
-// Lazy loading for images (if any are added later)
-function lazyLoadImages() {
-    const images = document.querySelectorAll('img[data-src]');
-    const imageObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                const img = entry.target;
-                img.src = img.dataset.src;
-                img.classList.remove('lazy');
-                imageObserver.unobserve(img);
-            }
-        });
-    });
+    handleVehicleSelect(button) {
+        this.elements.vehicleButtons.forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+        this.updateCalculatorDisplay();
+    },
 
-    images.forEach(img => imageObserver.observe(img));
-}
+    handleOptionSelect(button) {
+        const group = button.closest('.button-group');
+        const buttonsInGroup = group ? Array.from(group.querySelectorAll('.option-btn')) : [];
+        buttonsInGroup.forEach(item => item.classList.remove('active'));
+        button.classList.add('active');
+        this.updateCalculatorDisplay();
+    },
 
-// Call tracking simulation
-function trackCall(source) {
-    console.log(`Call initiated from: ${source}`);
-    // Here you would typically send data to analytics
-}
+    updateSliderBackground() {
+        const slider = this.elements.distanceInput;
+        if (!slider) {
+            return;
+        }
 
-// Add click tracking to phone links
-document.querySelectorAll('a[href^="tel:"]').forEach(link => {
-    link.addEventListener('click', function() {
-        trackCall(this.textContent);
-    });
-});
+        const min = Number(slider.min) || 0;
+        const max = Number(slider.max) || 100;
+        const value = Number(slider.value) || min;
+        const percentage = max === min ? 0 : ((value - min) / (max - min)) * 100;
+        slider.style.background = `linear-gradient(to right, #ff6b35 0%, #ff6b35 ${percentage}%, #e2e8f0 ${percentage}%, #e2e8f0 100%)`;
+    },
 
-// Add hover effects to cards
-document.querySelectorAll('.step, .advantage, .review, .fleet-item').forEach(card => {
-    card.addEventListener('mouseenter', function() {
-        this.style.transform = 'translateY(-8px)';
-    });
-    
-    card.addEventListener('mouseleave', function() {
-        this.style.transform = 'translateY(0)';
-    });
-});
+    calculatePrice() {
+        const distance = Number(this.elements.distanceInput?.value || 0);
+        const activeVehicle = this.elements.vehicleButtons.find(button => button.classList.contains('active'));
+        const vehiclePrice = activeVehicle ? Number(activeVehicle.dataset.price || 0) : 0;
+        const vehicleType = activeVehicle ? activeVehicle.dataset.type || 'vehicle' : 'vehicle';
 
-// Keyboard navigation for modal
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && modal.style.display === 'block') {
-        closeCallbackModal();
-    }
-});
+        const wheelsOption = document.querySelector('.option-btn.active[data-wheels]');
+        const wheels = wheelsOption ? Number(wheelsOption.dataset.wheels) : 0;
+        const steeringOption = document.querySelector('.option-btn.active[data-steering]');
+        const steeringLocked = steeringOption ? steeringOption.dataset.steering === 'yes' : false;
+        const expressSelected = Boolean(this.elements.expressCheckbox?.checked);
 
-// Performance optimization: debounce scroll events
-function debounce(func, wait) {
-    let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
+        let complexityCost = 0;
+        if (steeringLocked || wheels > 2) {
+            complexityCost = 500;
+        } else if (wheels > 0) {
+            complexityCost = 300;
+        }
+
+        const kmCost = distance * this.config.kmRate;
+        const expressCost = expressSelected ? this.config.expressCost : 0;
+        const total = vehiclePrice + kmCost + complexityCost + expressCost;
+
+        return {
+            distance,
+            vehiclePrice,
+            vehicleType,
+            kmCost,
+            complexityCost,
+            expressCost,
+            total,
+            wheels,
+            steeringLocked,
+            expressSelected
         };
-        clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
-    };
-}
+    },
 
-// Apply debouncing to scroll events
-const debouncedScrollHandler = debounce(function() {
-    // Any scroll-based functionality can go here
-}, 100);
+    updateCalculatorDisplay({ animate = true } = {}) {
+        const breakdown = this.calculatePrice();
+        this.state.lastCalculation = breakdown;
 
-window.addEventListener('scroll', debouncedScrollHandler);
+        if (this.elements.distanceValue) {
+            this.elements.distanceValue.textContent = `${breakdown.distance} км`;
+        }
 
-// Price animation on calculator change
-function animatePrice() {
-    const priceElements = document.querySelectorAll('#basePrice, #kmPrice, #totalPrice');
-    priceElements.forEach(el => {
-        el.style.transform = 'scale(1.1)';
-        el.style.color = '#ff6b35';
-        setTimeout(() => {
-            el.style.transform = 'scale(1)';
-            el.style.color = '';
-        }, 200);
-    });
-}
+        this.animateCurrency(this.elements.basePrice, breakdown.vehiclePrice, { animate });
+        this.animateCurrency(this.elements.kmPrice, breakdown.kmCost, { animate });
+        this.animateCurrency(this.elements.totalPrice, breakdown.total, { animate });
 
-// Enhanced calculator with animation
-if (distanceSlider) {
-    distanceSlider.addEventListener('input', function() {
-        calculatePrice();
-        animatePrice();
-    });
-}
-
-if (vehicleType) {
-    vehicleType.addEventListener('change', function() {
-        calculatePrice();
-        animatePrice();
-    });
-}
-
-// Add loading animation
-window.addEventListener('load', function() {
-    document.body.classList.add('loaded');
-});
-
-// Preload critical resources
-function preloadResources() {
-    const criticalResources = [
-        'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap',
-        'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css'
-    ];
-    
-    criticalResources.forEach(resource => {
-        const link = document.createElement('link');
-        link.rel = 'preload';
-        link.href = resource;
-        link.as = 'style';
-        document.head.appendChild(link);
-    });
-}
-
-// Initialize preloading
-preloadResources();
-
-// Add error handling for failed resource loads
-window.addEventListener('error', function(e) {
-    console.error('Resource failed to load:', e.target.src || e.target.href);
-});
-
-// Add focus management for accessibility
-function manageFocus() {
-    const focusableElements = 'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
-    
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Tab') {
-            const focusable = Array.from(document.querySelectorAll(focusableElements));
-            const index = focusable.indexOf(document.activeElement);
-            
-            if (e.shiftKey) {
-                const nextIndex = index > 0 ? index - 1 : focusable.length - 1;
-                focusable[nextIndex].focus();
+        if (this.elements.complexityRow && this.elements.complexityValue) {
+            if (breakdown.complexityCost > 0) {
+                this.elements.complexityRow.style.display = 'flex';
+                this.animateCurrency(this.elements.complexityValue, breakdown.complexityCost, { animate, signed: true });
             } else {
-                const nextIndex = index < focusable.length - 1 ? index + 1 : 0;
-                focusable[nextIndex].focus();
+                this.elements.complexityRow.style.display = 'none';
             }
         }
-    });
-}
 
-// Initialize focus management
-manageFocus();
+        if (this.elements.expressRow && this.elements.expressValue) {
+            if (breakdown.expressCost > 0) {
+                this.elements.expressRow.style.display = 'flex';
+                this.animateCurrency(this.elements.expressValue, breakdown.expressCost, { animate, signed: true });
+            } else {
+                this.elements.expressRow.style.display = 'none';
+            }
+        }
 
-// Add touch support for mobile
-function addTouchSupport() {
-    let touchStartY = 0;
-    
-    document.addEventListener('touchstart', function(e) {
-        touchStartY = e.touches[0].clientY;
-    });
-    
-    document.addEventListener('touchmove', function(e) {
-        const touchY = e.touches[0].clientY;
-        const touchDiff = touchStartY - touchY;
-        
-        // Add any touch-specific functionality here
-    });
-}
+        return breakdown;
+    },
 
-// Initialize touch support
-addTouchSupport(); 
+    animateCurrency(element, value, { animate = true, signed = false } = {}) {
+        if (!element) {
+            return;
+        }
+
+        const formatted = number => {
+            const sign = signed && number > 0 ? '+' : signed && number < 0 ? '−' : '';
+            const absolute = Math.abs(number);
+            return `${sign}${absolute.toLocaleString('ru-RU')}₽`;
+        };
+
+        const targetValue = Number(value) || 0;
+        const startValue = Number(element.dataset.value || element.textContent.replace(/[^0-9-]/g, '')) || 0;
+
+        if (!animate) {
+            element.textContent = formatted(targetValue);
+            element.dataset.value = String(targetValue);
+            return;
+        }
+
+        const startTime = performance.now();
+        const duration = this.config.priceAnimationDuration;
+
+        const step = currentTime => {
+            const progress = Math.min((currentTime - startTime) / duration, 1);
+            const currentValue = Math.round(startValue + (targetValue - startValue) * progress);
+            element.textContent = formatted(currentValue);
+            if (progress < 1) {
+                requestAnimationFrame(step);
+            } else {
+                element.dataset.value = String(targetValue);
+            }
+        };
+
+        requestAnimationFrame(step);
+    },
+
+    openModal() {
+        if (!this.elements.modal) {
+            return;
+        }
+
+        this.resetModalContent();
+        this.elements.modal.style.display = 'block';
+        this.elements.body.style.overflow = 'hidden';
+        this.state.modalOpen = true;
+    },
+
+    closeModal() {
+        if (!this.elements.modal) {
+            return;
+        }
+
+        this.elements.modal.style.display = 'none';
+        this.elements.body.style.overflow = '';
+        this.state.modalOpen = false;
+        this.elements.callbackForm?.reset();
+        this.resetCallbackTimerUI();
+        this.clearFormFeedback();
+    },
+
+    handleModalClick(event) {
+        if (event.target === this.elements.modal) {
+            this.closeModal();
+        }
+    },
+
+    resetModalContent() {
+        if (this.elements.modalTitle) {
+            this.elements.modalTitle.textContent = 'Заказать обратный звонок';
+        }
+        if (this.elements.modalDescription) {
+            this.elements.modalDescription.textContent = 'Оставьте номер телефона и мы перезвоним в течение 30 секунд';
+        }
+        this.clearFormFeedback();
+        this.setFormLoading(false);
+        this.resetCallbackTimerUI();
+    },
+
+    async handleCallbackSubmit(event) {
+        event.preventDefault();
+        if (!this.elements.callbackForm) {
+            return;
+        }
+
+        const name = (this.elements.clientName?.value || '').trim();
+        const phone = (this.elements.clientPhone?.value || '').trim();
+
+        if (!name || !phone) {
+            this.showFormFeedback('Пожалуйста, заполните имя и телефон.', 'error');
+            return;
+        }
+
+        this.callAnalytics(this.elements.callbackSubmit?.dataset.ymGoal);
+        this.clearFormFeedback();
+        this.setFormLoading(true);
+
+        const breakdown = this.state.lastCalculation || this.calculatePrice();
+        const payload = {
+            name,
+            phone,
+            requestedAt: new Date().toISOString(),
+            calculator: breakdown
+        };
+
+        try {
+            const response = await CallbackService.send(this.config.apiEndpoint, payload);
+            if (!response || response.success === false) {
+                throw new Error('SERVER_ERROR');
+            }
+
+            this.showFormFeedback('Спасибо! Заявка отправлена, мы перезвоним в ближайшее время.', 'success');
+            this.elements.callbackForm.reset();
+            this.resetCallbackTimerUI();
+            this.startCallbackCountdown();
+        } catch (error) {
+            this.showFormFeedback('Не удалось отправить заявку. Попробуйте ещё раз.', 'error');
+        } finally {
+            this.setFormLoading(false);
+        }
+    },
+
+    setFormLoading(isLoading) {
+        if (!this.elements.callbackSubmit) {
+            return;
+        }
+        this.elements.callbackSubmit.disabled = isLoading;
+        this.elements.callbackSubmit.setAttribute('aria-busy', String(isLoading));
+    },
+
+    clearFormFeedback() {
+        if (!this.elements.callbackFeedback) {
+            return;
+        }
+        this.elements.callbackFeedback.textContent = '';
+        this.elements.callbackFeedback.classList.remove('form-feedback--success', 'form-feedback--error');
+    },
+
+    showFormFeedback(message, type) {
+        if (!this.elements.callbackFeedback) {
+            return;
+        }
+        this.elements.callbackFeedback.textContent = message;
+        this.elements.callbackFeedback.classList.remove('form-feedback--success', 'form-feedback--error');
+        if (type === 'success') {
+            this.elements.callbackFeedback.classList.add('form-feedback--success');
+        }
+        if (type === 'error') {
+            this.elements.callbackFeedback.classList.add('form-feedback--error');
+        }
+    },
+
+    resetCallbackTimerUI() {
+        if (this.state.callbackInterval) {
+            clearInterval(this.state.callbackInterval);
+            this.state.callbackInterval = null;
+        }
+
+        if (this.elements.timerIdle) {
+            this.elements.timerIdle.style.display = 'block';
+        }
+        if (this.elements.timerActive) {
+            this.elements.timerActive.style.display = 'none';
+        }
+        if (this.elements.timerFinished) {
+            this.elements.timerFinished.style.display = 'none';
+        }
+        if (this.elements.timerProgress) {
+            this.elements.timerProgress.style.transition = 'none';
+            this.elements.timerProgress.style.width = '0%';
+            requestAnimationFrame(() => {
+                if (this.elements.timerProgress) {
+                    this.elements.timerProgress.style.transition = `width ${this.config.callbackSeconds}s linear`;
+                }
+            });
+        }
+        if (this.elements.callbackCountdown) {
+            this.elements.callbackCountdown.textContent = String(this.config.callbackSeconds);
+        }
+    },
+
+    startCallbackCountdown() {
+        if (!this.elements.timerActive || !this.elements.callbackCountdown) {
+            return;
+        }
+
+        if (this.state.callbackInterval) {
+            clearInterval(this.state.callbackInterval);
+        }
+
+        let remaining = this.config.callbackSeconds;
+        this.elements.timerIdle?.style.display = 'none';
+        this.elements.timerActive.style.display = 'block';
+        this.elements.timerFinished?.style.display = 'none';
+        this.elements.callbackCountdown.textContent = String(remaining);
+
+        if (this.elements.timerProgress) {
+            this.elements.timerProgress.style.width = '0%';
+            requestAnimationFrame(() => {
+                if (this.elements.timerProgress) {
+                    this.elements.timerProgress.style.width = '100%';
+                }
+            });
+        }
+
+        this.state.callbackInterval = window.setInterval(() => {
+            remaining -= 1;
+            if (remaining >= 0) {
+                this.elements.callbackCountdown.textContent = String(remaining);
+            }
+            if (remaining < 0) {
+                this.finishCallbackCountdown();
+            }
+        }, 1000);
+    },
+
+    finishCallbackCountdown() {
+        if (this.state.callbackInterval) {
+            clearInterval(this.state.callbackInterval);
+            this.state.callbackInterval = null;
+        }
+
+        this.elements.timerActive?.style.display = 'none';
+        this.elements.timerFinished?.style.display = 'block';
+    },
+
+    callAnalytics(goal) {
+        const counterId = this.config.analyticsCounterId;
+        if (!goal || !counterId || typeof window === 'undefined') {
+            return;
+        }
+
+        const metrika = window.ym;
+        if (typeof metrika === 'function') {
+            metrika(counterId, 'reachGoal', goal);
+        }
+    },
+
+    initializeScrollAnimations() {
+        const animatedElements = document.querySelectorAll('.step, .advantage, .review, .fleet-item');
+        if (!animatedElements.length) {
+            return;
+        }
+
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        });
+
+        animatedElements.forEach(element => {
+            element.style.opacity = '0';
+            element.style.transform = 'translateY(30px)';
+            element.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(element);
+        });
+    },
+
+    initSmoothScroll() {
+        const anchors = document.querySelectorAll('a[href^="#"]');
+        anchors.forEach(anchor => {
+            anchor.addEventListener('click', event => {
+                const href = anchor.getAttribute('href');
+                if (!href || href === '#' || anchor.dataset.modal) {
+                    return;
+                }
+                const target = document.querySelector(href);
+                if (target) {
+                    event.preventDefault();
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    this.closeMenu();
+                }
+            });
+        });
+    },
+
+    toggleFaq(question) {
+        const answer = question.nextElementSibling;
+        const isActive = question.classList.contains('active');
+
+        this.elements.faqQuestions.forEach(item => {
+            item.classList.remove('active');
+            item.nextElementSibling?.classList.remove('active');
+        });
+
+        if (!isActive) {
+            question.classList.add('active');
+            answer?.classList.add('active');
+        }
+    },
+
+    maskPhoneInput() {
+        const input = this.elements.clientPhone;
+        if (!input) {
+            return;
+        }
+
+        input.addEventListener('input', event => {
+            const target = event.target;
+            let value = target.value.replace(/\D/g, '');
+
+            if (value.startsWith('8')) {
+                value = '7' + value.slice(1);
+            }
+            if (value.startsWith('7')) {
+                value = value.slice(1);
+            }
+
+            let formatted = '+7';
+            if (value.length > 0) {
+                formatted += ' (' + value.substring(0, 3);
+            }
+            if (value.length >= 4) {
+                formatted += ') ' + value.substring(3, 6);
+            }
+            if (value.length >= 7) {
+                formatted += '-' + value.substring(6, 8);
+            }
+            if (value.length >= 9) {
+                formatted += '-' + value.substring(8, 10);
+            }
+
+            target.value = formatted;
+        });
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
+
+window.App = App;

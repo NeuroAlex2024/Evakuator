@@ -52,11 +52,11 @@
                         <i class="fas fa-phone"></i>
                         +7 (977) 295-71-71
                     </a>
-                    <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                    <button class="mobile-menu-toggle" type="button" aria-label="Открыть меню" aria-expanded="false" aria-controls="navMenu">
                         <span></span>
                         <span></span>
                         <span></span>
-                    </div>
+                    </button>
                 </div>
             </div>
         </div>
@@ -75,7 +75,7 @@
                             <i class="fas fa-phone"></i>
                             ВЫЗВАТЬ СЕЙЧАС
                         </a>
-                        <button class="btn btn-secondary" onclick="ym(103201010,'reachGoal','tel_click'); openCallbackModal()">
+                        <button class="btn btn-secondary" data-modal="callback" data-ym-goal="tel_click">
                             <i class="fas fa-callback"></i>
                             ПЕРЕЗВОНИТЬ МНЕ
                         </button>
@@ -192,14 +192,14 @@
 
                 <div class="form-group">
                     <label>
-                        <input type="checkbox" id="expressService" onchange="calculateAdvancedPrice()">
+                        <input type="checkbox" id="expressService">
                         Экспресс-подача (до 15 минут) +500₽
                     </label>
                 </div>
 
                 <div class="form-group">
                     <label>Расстояние: <span id="distanceValue">10 км</span></label>
-                    <input type="range" id="distance" min="1" max="100" value="10" oninput="calculateAdvancedPrice()">
+                    <input type="range" id="distance" min="1" max="100" value="10">
                 </div>
 
                 <div class="price-result">
@@ -210,7 +210,7 @@
                         <div class="express-price" id="expressPrice" style="display: none;">Экспресс: <span>+500₽</span></div>
                         <div class="total">Итого: <span id="totalPrice">2500₽</span></div>
                     </div>
-                    <button class="btn btn-primary" onclick="ym(103201010,'reachGoal','tel_click'); openCallbackModal()">
+                    <button class="btn btn-primary" data-modal="callback" data-ym-goal="tel_click">
                         ЗАКАЗАТЬ ПО ЭТОЙ ЦЕНЕ
                     </button>
                 </div>
@@ -344,7 +344,7 @@
             <h2>Часто задаваемые вопросы</h2>
             <div class="faq-list">
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
+                    <div class="faq-question">
                         <span>Сколько стоит эвакуация в Москве?</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -353,7 +353,7 @@
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
+                    <div class="faq-question">
                         <span>Как быстро приедет эвакуатор?</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -362,7 +362,7 @@
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
+                    <div class="faq-question">
                         <span>Какие способы оплаты принимаете?</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -371,7 +371,7 @@
                     </div>
                 </div>
                 <div class="faq-item">
-                    <div class="faq-question" onclick="toggleFaq(this)">
+                    <div class="faq-question">
                         <span>Есть ли страховка автомобиля?</span>
                         <i class="fas fa-chevron-down"></i>
                     </div>
@@ -418,7 +418,7 @@
                         <i class="fas fa-phone"></i>
                         +7 (977) 295-71-71
                     </a>
-                    <button class="btn btn-secondary btn-large" onclick="ym(103201010,'reachGoal','tel_click'); openCallbackModal()">
+                    <button class="btn btn-secondary btn-large" data-modal="callback" data-ym-goal="tel_click">
                         <i class="fas fa-callback"></i>
                         Перезвонить мне
                     </button>
@@ -474,16 +474,17 @@
     <!-- Callback Modal -->
     <div id="callbackModal" class="modal">
         <div class="modal-content">
-            <span class="close" onclick="closeCallbackModal()">&times;</span>
+            <button type="button" class="close" aria-label="Закрыть модальное окно">&times;</button>
             <h3>Заказать обратный звонок</h3>
             <p>Оставьте номер телефона и мы перезвоним в течение 30 секунд</p>
             <form id="callbackForm">
                 <input type="text" id="clientName" placeholder="Ваше имя" required>
                 <input type="tel" id="clientPhone" placeholder="+7 (___) ___-__-__" required>
-                <button type="submit" class="btn btn-primary" onclick="ym(103201010,'reachGoal','tel_click')">
+                <button type="submit" class="btn btn-primary" data-ym-goal="tel_click">
                     <i class="fas fa-phone"></i>
                     ПЕРЕЗВОНИТЬ МНЕ
                 </button>
+                <div class="form-feedback" id="callbackFeedback" role="status" aria-live="polite"></div>
             </form>
             <div class="callback-timer-container">
                 <div class="callback-timer-idle">

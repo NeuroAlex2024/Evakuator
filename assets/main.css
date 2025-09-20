@@ -1272,10 +1272,17 @@ input[type="range"]::-webkit-slider-thumb {
     font-size: 28px;
     font-weight: bold;
     cursor: pointer;
+    background: none;
+    border: none;
 }
 
 .close:hover {
     color: #ff6b35;
+}
+
+.close:focus {
+    outline: 2px solid #ff6b35;
+    outline-offset: 2px;
 }
 
 .modal-content h3 {
@@ -1285,6 +1292,20 @@ input[type="range"]::-webkit-slider-thumb {
 
 .modal-content form {
     margin: 2rem 0;
+}
+
+.form-feedback {
+    margin-top: 0.75rem;
+    font-size: 0.95rem;
+    min-height: 1.4rem;
+}
+
+.form-feedback--success {
+    color: #0a8f3a;
+}
+
+.form-feedback--error {
+    color: #d8343a;
 }
 
 .modal-content input {
