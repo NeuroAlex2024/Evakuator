@@ -86,13 +86,10 @@ h3 {
 }
 
 /* Header */
-.sticky-header {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
+.top-bar {
+    position: relative;
+    width: 100%;
+    background: #ffffff;
     border-bottom: 1px solid rgba(255, 107, 53, 0.1);
     z-index: 1000;
     padding: 1rem 0;
@@ -176,18 +173,6 @@ h3 {
 
 .nav-menu.mobile-active {
     display: flex;
-    flex-direction: column;
-    position: fixed;
-    top: 100%;
-    left: 0;
-    right: 0;
-    background: white;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-    padding: 2rem 1rem;
-    z-index: 999;
-    max-height: calc(100vh - 80px);
-    overflow-y: auto;
-    animation: slideDown 0.3s ease-out;
 }
 
 @keyframes slideDown {
@@ -205,22 +190,13 @@ h3 {
     color: #333;
     text-decoration: none;
     font-weight: 500;
-    padding: 1rem 0;
-    border-bottom: 1px solid rgba(255, 107, 53, 0.1);
-    width: 100%;
-    text-align: center;
-    font-size: 1.1rem;
-    transition: all 0.3s ease;
-}
-
-.nav-link:last-child {
-    border-bottom: none;
+    font-size: 1.05rem;
+    padding: 0.5rem 0;
+    transition: color 0.3s ease;
 }
 
 .nav-link:hover {
     color: #ff6b35;
-    background: rgba(255, 107, 53, 0.05);
-    transform: translateX(5px);
 }
 
 /* Hero Section */
@@ -228,7 +204,7 @@ h3 {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     padding: 8rem 0 4rem;
-    margin-top: 80px;
+    margin-top: 0;
     position: relative;
     overflow: hidden;
 }
@@ -1623,11 +1599,44 @@ input[type="range"]::-webkit-slider-thumb {
 
     .nav-menu {
         display: none;
+        position: static;
     }
 
     .nav-menu.mobile-active {
         display: flex;
-        position: fixed;
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #ffffff;
+        box-shadow: 0 20px 40px rgba(15, 23, 42, 0.15);
+        border-radius: 0 0 20px 20px;
+        padding: 1.5rem 1rem;
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0;
+        z-index: 999;
+        max-height: calc(100vh - 80px);
+        overflow-y: auto;
+        animation: slideDown 0.3s ease-out;
+    }
+
+    .nav-link {
+        width: 100%;
+        padding: 1rem 0;
+        border-bottom: 1px solid rgba(255, 107, 53, 0.1);
+        text-align: center;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+    }
+
+    .nav-link:last-child {
+        border-bottom: none;
+    }
+
+    .nav-link:hover {
+        background: rgba(255, 107, 53, 0.05);
+        color: #ff6b35;
     }
 
     .phone-btn {
