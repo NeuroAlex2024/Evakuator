@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.addEventListener('click', function(event) {
         const navMenu = document.getElementById('navMenu');
         const toggleBtn = document.querySelector('.mobile-menu-toggle');
-        const header = document.querySelector('.sticky-header');
+        const header = document.querySelector('.top-bar');
         
         if (!header.contains(event.target) && navMenu.classList.contains('mobile-active')) {
             navMenu.classList.remove('mobile-active');
@@ -448,7 +448,7 @@ function initializeScrollAnimations() {
 
 // Header scroll effect
 window.addEventListener('scroll', function() {
-    const header = document.querySelector('.sticky-header');
+    const header = document.querySelector('.top-bar');
     if (header) {
         if (window.scrollY > 100) {
             header.style.background = 'rgba(255, 255, 255, 0.98)';
