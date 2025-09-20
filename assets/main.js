@@ -508,9 +508,13 @@ const App = {
         }
 
         let remaining = this.config.callbackSeconds;
-        this.elements.timerIdle?.style.display = 'none';
+        if (this.elements.timerIdle) {
+            this.elements.timerIdle.style.display = 'none';
+        }
         this.elements.timerActive.style.display = 'block';
-        this.elements.timerFinished?.style.display = 'none';
+        if (this.elements.timerFinished) {
+            this.elements.timerFinished.style.display = 'none';
+        }
         this.elements.callbackCountdown.textContent = String(remaining);
 
         if (this.elements.timerProgress) {
@@ -539,8 +543,12 @@ const App = {
             this.state.callbackInterval = null;
         }
 
-        this.elements.timerActive?.style.display = 'none';
-        this.elements.timerFinished?.style.display = 'block';
+        if (this.elements.timerActive) {
+            this.elements.timerActive.style.display = 'none';
+        }
+        if (this.elements.timerFinished) {
+            this.elements.timerFinished.style.display = 'block';
+        }
     },
 
     callAnalytics(goal) {
